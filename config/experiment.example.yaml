@@ -1,0 +1,68 @@
+# experiment.example.yaml - full parameter surface for a run.
+# Copy to config/runs/<name>.yaml and edit (or use the dashboard Configure page).
+# Every knob here must be respected by the pipeline; nothing experiment-shaped is hardcoded.
+
+run:
+  name: pilot-01
+  seed: 20260716
+  budget_usd: 300.00          # hard cap; pipeline halts (resumable) at this spend
+  phase: 1                    # informational; gates some stages (fingerprint requires >=3)
+
+roster:                       # model strings are the ONLY place vendor names appear
+  - { slot: anthropic_frontier, provider: anthropic, model: "claude-opus-4-8", family: anthropic }
+  - { slot: anthropic_small,    provider: anthropic, model: "claude-haiku-4-5-20251001", family: anthropic }
+  - { slot: google_frontier,    provider: google,    model: "gemini-2.5-pro", family: google }
+  - { slot: google_small,       provider: google,    model: "gemini-2.5-flash", family: google }
+  - { slot: openai_frontier,    provider: openai,    model: "gpt-5", family: openai }
+  - { slot: openai_small,       provider: openai,    model: "gpt-5-mini", family: openai }
+
+domains:
+  - name: verifiable_if       # objective arm; ground truth programmatic
+    n_prompts: 20
+    reference: programmatic
+  - name: open_qa_summarization
+    n_prompts: 20
+    reference: ensemble
+    rubrics: { source: llm_drafted_human_reviewed, per_task_min: 4, per_task_max: 10 }
+  - name: creative_writing    # primary RQ2 domain
+    n_prompts: 20
+    reference: ensemble
+    rubrics: { source: llm_drafted_human_reviewed, per_task_min: 4, per_task_max: 10 }
+
+lengths:
+  target_bins_tokens: [100, 500, 1500]   # Phase 2: [25, 50, 100, 250, 500, 1000, 2500]
+  tolerance_pct: 20
+  max_retries: 3
+  truncation_series: true     # derived from longest generation; probes/attribution only
+
+generation:
+  temperature: 0.7
+  persist_raw: true
+
+judging:
+  paradigms: [pwc, rubric]    # 'da' reserved for future milestone
+  disclosure_arms: [anonymous]  # Phase 2: [anonymous, true_label, false_label]
+  order_swap_pwc: true          # non-negotiable; kept as a visible flag anyway
+  temperature: 0.0
+  elicit_confidence: true
+  judge_isolation: true         # must remain true outside the future contagion study
+
+probes:
+  pairwise_recognition: true
+  single_recognition: false     # Phase 2: true
+  on_truncation_series: true
+
+diagnostics:
+  repeatability_sample_pct: 2
+  repeatability_n: 5
+
+analysis:
+  bootstrap_iterations: 1000
+  attribution_baseline: tfidf   # Phase 3 adds: fingerprint
+  mixed_effects: true
+
+fingerprint:                    # Phase 3 only
+  enabled: false
+  discovery_pool_prompts: 60
+  feature_response_types: [categorical, ordinal, scale, binary, multi_select]
+  dedup_cosine_threshold: 0.85
