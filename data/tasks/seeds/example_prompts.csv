@@ -1,0 +1,6 @@
+prompt,domain,reference,rubrics,constraint
+"Write a short scene: a lighthouse keeper receives an unexpected letter.",creative_writing,ensemble,"Stays on topic and answers the prompt; Vivid and concrete imagery; Avoids cliché | negative",
+"Write a small myth explaining why the sea is salt.",creative_writing,ensemble,"Has a clear beginning, middle, and end; Reads as a myth, not an essay; Avoids modern anachronisms | negative",
+"Summarize the causes of the 1929 financial crash for a general reader.",open_qa_summarization,ensemble,"Covers the main causes; Is accurate; Avoids jargon | negative",
+"List steps to reset a home router. Include the word 'firmware' and keep it under 120 words.",verifiable_if,programmatic,,"must_include:firmware; max_words:120"
+"Describe a sunny morning in exactly three sentences.",verifiable_if,programmatic,,"exact_sentence_count:3"

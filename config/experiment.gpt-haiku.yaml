@@ -1,0 +1,68 @@
+# experiment.gpt-haiku.yaml - two cloud models, each via its own provider key:
+#   - an OpenAI model ("GPT Luna")   via OPENAI_API_KEY
+#   - Claude Haiku 4.5               via ANTHROPIC_API_KEY
+#
+# Before running, set the GPT `model:` to the EXACT OpenAI model ID (see step 2 in the
+# guide - a wrong ID fails at `selfbias check`). Then:
+#   uv run selfbias check    config/experiment.gpt-haiku.yaml   # 1 tiny call per model
+#   uv run selfbias estimate config/experiment.gpt-haiku.yaml   # per-model cost, no calls
+#   uv run selfbias run      config/experiment.gpt-haiku.yaml   # confirm, then execute
+#   uv run selfbias analyze  config/experiment.gpt-haiku.yaml
+
+run:
+  name: gpt-haiku-quick
+  seed: 20260720
+  # SINGLE TOTAL cap for the whole run (NOT per model). 2 models x $3 = $6 total.
+  # At these sample sizes the real cost is a few cents; this is just a hard backstop.
+  budget_usd: 6.00
+  phase: 1
+
+roster:                        # 2 models, each with its own provider + key env-var
+  - { slot: gpt,   provider: openai,    model: "gpt-5.6-luna",
+      family: openai,    api_key_env: OPENAI_API_KEY }
+  - { slot: haiku, provider: anthropic, model: "claude-haiku-4-5",
+      family: anthropic, api_key_env: ANTHROPIC_API_KEY }
+
+domains:
+  - name: creative_writing
+    n_prompts: 5
+    reference: ensemble
+    rubrics: { source: llm_drafted_human_reviewed, per_task_min: 4, per_task_max: 6 }
+  - name: verifiable_if
+    n_prompts: 5
+    reference: programmatic
+
+lengths:
+  target_bins_tokens: [100, 500]
+  tolerance_pct: 20
+  max_retries: 3
+  truncation_series: true
+
+generation:
+  temperature: 0.7
+  persist_raw: true
+
+judging:
+  paradigms: [pwc, rubric]
+  disclosure_arms: [anonymous]
+  order_swap_pwc: true
+  temperature: 0.0
+  elicit_confidence: true
+  judge_isolation: true
+
+probes:
+  pairwise_recognition: true
+  single_recognition: false
+  on_truncation_series: true
+
+diagnostics:
+  repeatability_sample_pct: 2
+  repeatability_n: 5
+
+analysis:
+  bootstrap_iterations: 1000
+  attribution_baseline: tfidf
+  mixed_effects: true
+
+fingerprint:
+  enabled: false

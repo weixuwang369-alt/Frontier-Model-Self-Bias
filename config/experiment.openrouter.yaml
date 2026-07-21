@@ -1,0 +1,77 @@
+# experiment.openrouter.yaml - cloud-only quick test through ONE OpenRouter key.
+#
+# OpenRouter is a single OpenAI-compatible endpoint that fronts hundreds of models
+# (open and closed), so one API key covers your whole roster - no local models.
+#
+# Setup:
+#   1. Make a key at https://openrouter.ai/keys and add credit (a few dollars).
+#   2. Put it in .env:   OPENROUTER_API_KEY=sk-or-...
+#   3. Confirm each model slug below on https://openrouter.ai/models (use the exact
+#      "copy model ID" string; a wrong slug fails at `selfbias check`).
+#
+#   uv run selfbias check    config/experiment.openrouter.yaml   # 1 tiny call per model
+#   uv run selfbias estimate config/experiment.openrouter.yaml   # cost preview, no calls
+#   uv run selfbias run      config/experiment.openrouter.yaml   # confirm, then execute
+#   uv run selfbias analyze  config/experiment.openrouter.yaml
+
+run:
+  name: openrouter-quick
+  seed: 20260720
+  budget_usd: 2.00            # hard cap: the run halts (resumably) before crossing it
+  phase: 1
+
+roster:                        # any N >= 2 models, all via the one OpenRouter key
+  - { slot: qwen,  provider: openai_compatible, model: "qwen/qwen-2.5-7b-instruct",
+      family: qwen,  base_url: "https://openrouter.ai/api/v1", api_key_env: OPENROUTER_API_KEY }
+  - { slot: llama, provider: openai_compatible, model: "meta-llama/llama-3.1-8b-instruct",
+      family: llama, base_url: "https://openrouter.ai/api/v1", api_key_env: OPENROUTER_API_KEY }
+
+domains:
+  - name: creative_writing
+    n_prompts: 5
+    reference: ensemble
+    rubrics: { source: llm_drafted_human_reviewed, per_task_min: 4, per_task_max: 6 }
+  - name: verifiable_if
+    n_prompts: 5
+    reference: programmatic
+
+lengths:
+  target_bins_tokens: [100, 500]
+  tolerance_pct: 20
+  max_retries: 3
+  truncation_series: true
+
+generation:
+  temperature: 0.7
+  persist_raw: true
+
+judging:
+  paradigms: [pwc, rubric]
+  disclosure_arms: [anonymous]
+  order_swap_pwc: true
+  temperature: 0.0
+  elicit_confidence: true
+  judge_isolation: true
+
+probes:
+  pairwise_recognition: true
+  single_recognition: false
+  on_truncation_series: true
+
+diagnostics:
+  repeatability_sample_pct: 2
+  repeatability_n: 5
+
+analysis:
+  bootstrap_iterations: 1000
+  attribution_baseline: tfidf
+  mixed_effects: true
+
+fingerprint:
+  enabled: false
+
+# To bring your own prompts instead of the built-in set, run `selfbias template
+# prompts.xlsx`, fill it in, and add:
+#   prompts:
+#     source: excel
+#     excel_path: prompts.xlsx
